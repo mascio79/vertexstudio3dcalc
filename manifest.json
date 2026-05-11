@@ -2,7 +2,7 @@
   "name": "3DCALC — Calcolatore Costi Stampa 3D",
   "short_name": "3DCALC",
   "description": "Calcolatore professionale per costi di stampa 3D FDM",
-  "start_url": "/3dcalc/",
+  "start_url": "/vertexstudio3dcalc/",
   "display": "standalone",
   "background_color": "#0a0a0f",
   "theme_color": "#0a0a0f",
