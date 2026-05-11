@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="3DCALC">
+<meta name="theme-color" content="#0a0a0f">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>3DCALC — Calcolatore Costi Stampa 3D</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async></script>
+<style>
+:root{
+  --bg:#0a0a0f;--surface:#111118;--surface2:#1a1a24;--border:#2a2a3a;
+  --accent:#ff6b35;--accent2:#ffb347;--text:#e8e8f0;--muted:#7a7a9a;
+  --green:#4ade80;--red:#f87171;--blue:#60a5fa;
+  --sidebar:240px;--tr:0.18s cubic-bezier(.4,0,.2,1);--radius:12px;
+}
+body.theme-light{
+  --bg:#f0f0f5;--surface:#ffffff;--surface2:#e8e8f0;--border:#d0d0de;
+  --text:#1a1a2e;--muted:#606080;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;}
+body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;overflow:hidden;}
+
+/* ── SIDEBAR ── */
+#sidebar{width:var(--sidebar);height:100vh;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;left:0;top:0;z-index:100;transition:width var(--tr);overflow:hidden;}
+#sidebar.collapsed{width:58px;}
+#sidebar-logo{display:flex;align-items:center;gap:10px;padding:16px 14px 14px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.logo-icon{width:38px;height:38px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.logo-text{font-family:'Syne',sans-serif;font-weight:800;font-size:15px;white-space:nowrap;overflow:hidden;opacity:1;transition:opacity var(--tr);line-height:1.2;}
+.logo-text span{color:var(--accent);}
+.logo-sub{font-size:10px;color:var(--muted);font-weight:400;}
+#sidebar.collapsed .logo-text{opacity:0;width:0;}
+#sidebar-toggle{position:absolute;top:20px;right:-12px;width:24px;height:24px;background:var(--surface2);border:1px solid var(--border);border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted);z-index:10;transition:all var(--tr);}
+#sidebar-toggle:hover{background:var(--accent);color:#fff;border-color:var(--accent);}
+#sidebar nav{flex:1;overflow-y:auto;padding:8px;scrollbar-width:thin;scrollbar-color:var(--border) transparent;}
+.nav-sec-label{font-size:9px;font-weight:700;letter-spacing:1.5px;color:var(--muted);padding:10px 10px 4px;text-transform:uppercase;white-space:nowrap;transition:opacity var(--tr);}
+#sidebar.collapsed .nav-sec-label{opacity:0;}
+.ni-item{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:var(--radius);cursor:pointer;color:var(--muted);font-size:13px;font-weight:600;transition:all var(--tr);white-space:nowrap;overflow:hidden;}
+.ni-item:hover{background:var(--surface2);color:var(--text);}
+.ni-item.active{background:rgba(255,107,53,0.15);color:var(--accent);}
+.ni-item .ico{font-size:16px;flex-shrink:0;width:22px;text-align:center;}
+.ni-item .lbl{overflow:hidden;transition:opacity var(--tr);}
+#sidebar.collapsed .lbl{opacity:0;width:0;}
+
+/* ── MAIN ── */
+#main{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column;height:100vh;transition:margin-left var(--tr);overflow:hidden;}
+#sidebar.collapsed~#main{margin-left:58px;}
+
+/* ── TOPBAR ── */
+#topbar{height:52px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:12px;flex-shrink:0;position:relative;}
+#topbar::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent2),var(--accent));}
+.topbar-title{font-family:'Syne',sans-serif;font-weight:800;font-size:16px;flex:1;}
+.tbtn{display:flex;align-items:center;gap:5px;padding:6px 12px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-family:'Syne',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all var(--tr);}
+.tbtn:hover{border-color:var(--accent);color:var(--accent);}
+#mobile-menu-btn{display:none;background:none;border:none;color:var(--text);font-size:22px;cursor:pointer;padding:4px 6px;margin-right:2px;}
+
+/* ── CONTENT ── */
+#content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:24px;padding-bottom:56px;scrollbar-width:thin;scrollbar-color:var(--border) transparent;}
+.page{display:none;}
+.page.active{display:block;animation:fadeIn .18s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ── DRIVE BAR ── */
+#drive-bar{position:fixed;bottom:0;left:var(--sidebar);right:0;height:30px;z-index:90;background:var(--surface);border-top:1px solid var(--border);display:flex;align-items:center;padding:0 16px;gap:8px;font-size:11px;color:var(--muted);transition:left var(--tr);}
+#sidebar.collapsed~#main #drive-bar{left:58px;}
+.ddot{width:7px;height:7px;border-radius:50%;background:var(--muted);flex-shrink:0;transition:background .3s;}
+.ddot.connected{background:var(--green);box-shadow:0 0 6px var(--green);}
+.ddot.syncing{background:var(--accent2);animation:dpulse 1s infinite;}
+.ddot.error{background:var(--red);}
+@keyframes dpulse{0%,100%{opacity:1}50%{opacity:.4}}
+#drive-bar .dlabel{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+#drive-bar .dacts{display:flex;gap:6px;flex-shrink:0;}
+#drive-bar button{background:none;border:1px solid var(--border);color:var(--muted);padding:2px 9px;border-radius:5px;font-size:11px;cursor:pointer;font-family:'Syne',sans-serif;font-weight:600;transition:all .2s;}
+#drive-bar button:hover{border-color:var(--accent);color:var(--accent);}
+
+/* ── LOGIN ── */
+#login-overlay{position:fixed;inset:0;background:var(--bg);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;}
+#login-overlay.hidden{display:none;}
+.lbox{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:40px 44px;text-align:center;max-width:380px;width:100%;}
+.llogo{width:64px;height:64px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;}
+.ltitle{font-family:'Syne',sans-serif;font-weight:800;font-size:24px;margin-bottom:6px;}
+.ltitle span{color:var(--accent);}
+.lsub{color:var(--muted);font-size:13px;line-height:1.6;margin-bottom:24px;}
+.lgbtn{display:inline-flex;align-items:center;gap:9px;background:#fff;color:#1f1f1f;padding:12px 20px;border-radius:12px;font-family:'Syne',sans-serif;font-weight:700;font-size:15px;cursor:pointer;border:none;transition:all .2s;width:100%;justify-content:center;}
+.lgbtn:hover{background:#f1f1f1;transform:translateY(-1px);box-shadow:0 6px 20px rgba(0,0,0,.4);}
+.lgbtn img{width:20px;height:20px;}
+.lskip{background:none;border:1px solid var(--border);color:var(--muted);padding:10px 20px;border-radius:12px;font-family:'Syne',sans-serif;font-size:13px;cursor:pointer;margin-top:10px;width:100%;transition:all .2s;}
+.lskip:hover{border-color:var(--muted);color:var(--text);}
+.lnote{font-size:11px;color:var(--muted);margin-top:14px;}
+
+/* ── MOBILE OVERLAY ── */
+#mobile-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99;}
+#mobile-overlay.open{display:block;}
+
+/* ── CARDS ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px;transition:border-color .2s;}
+.card:hover{border-color:rgba(255,107,53,.25);}
+.card-title{font-size:14px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:9px;}
+.card-icon{width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+.ico-orange{background:rgba(255,107,53,.15);}
+.ico-blue{background:rgba(96,165,250,.15);}
+.ico-yellow{background:rgba(251,191,36,.15);}
+.ico-purple{background:rgba(167,139,250,.15);}
+.ico-green{background:rgba(74,222,128,.15);}
+
+/* ── CALC LAYOUT ── */
+.calc-grid{display:grid;grid-template-columns:1fr 360px;gap:22px;align-items:start;}
+
+/* ── SECTION TITLE ── */
+.sec-title{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--accent);font-family:'Space Mono',monospace;margin:20px 0 12px;display:flex;align-items:center;gap:8px;}
+.sec-title:first-child{margin-top:0;}
+.sec-title::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* ── FORMS ── */
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:13px;}
+.fg.c3{grid-template-columns:1fr 1fr 1fr;}
+.fg.c1{grid-template-columns:1fr;}
+.field{display:flex;flex-direction:column;gap:5px;}
+label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;display:flex;align-items:center;gap:4px;}
+.iw{position:relative;}
+input[type="number"],input[type="text"],select{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:10px 42px 10px 12px;color:var(--text);font-family:'Space Mono',monospace;font-size:13px;outline:none;transition:border-color .2s;appearance:none;}
+input:focus,select:focus{border-color:var(--accent);}
+.unit{position:absolute;right:11px;top:50%;transform:translateY(-50%);font-size:10px;color:var(--muted);font-family:'Space Mono',monospace;pointer-events:none;}
+input[type="number"]::-webkit-inner-spin-button{display:none;}
+select option{background:var(--surface2);}
+
+/* ── COMPUTED BADGE ── */
+.cbadge{background:rgba(255,107,53,.08);border:1px solid rgba(255,107,53,.22);border-radius:8px;padding:8px 12px;font-family:'Space Mono',monospace;font-size:11px;color:var(--accent);line-height:1.6;margin-bottom:12px;}
+.cbadge span{color:var(--muted);}
+
+/* ── RESULT PANEL ── */
+.result-panel{position:sticky;top:0;}
+.result-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+.result-head{background:linear-gradient(135deg,rgba(255,107,53,.14),rgba(255,179,71,.05));border-bottom:1px solid var(--border);padding:14px 18px;display:flex;justify-content:space-between;align-items:center;}
+.result-head h3{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);font-family:'Space Mono',monospace;}
+.result-body{padding:16px 18px;}
+.cost-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;}
+.cost-row:last-of-type{border-bottom:none;}
+.cost-label{display:flex;align-items:center;gap:7px;color:var(--muted);}
+.dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.cost-val{font-family:'Space Mono',monospace;font-size:12px;font-weight:700;}
+.total-block{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px;margin:12px 0;text-align:center;}
+.total-lbl{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);font-family:'Space Mono',monospace;margin-bottom:5px;}
+.total-val{font-size:36px;font-weight:800;color:var(--accent);letter-spacing:-1px;line-height:1;}
+.total-val span{font-size:18px;margin-right:2px;color:var(--accent2);}
+.unit-cost{font-size:11px;color:var(--muted);margin-top:4px;font-family:'Space Mono',monospace;}
+
+/* ── CHART ── */
+.chart-wrap{display:flex;flex-direction:column;align-items:center;margin:10px 0 4px;}
+.chart-legend{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;margin-top:8px;}
+.leg-item{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted);background:var(--surface2);padding:3px 8px;border-radius:20px;}
+.leg-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+
+/* ── SLIDER ── */
+input[type="range"]{width:100%;-webkit-appearance:none;height:5px;border-radius:3px;background:var(--border);outline:none;cursor:pointer;}
+input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--accent);cursor:pointer;box-shadow:0 0 0 3px rgba(255,107,53,.2);}
+.margin-wrap{margin:12px 0;}
+.margin-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.margin-lbl{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;}
+.margin-val{font-family:'Space Mono',monospace;font-size:14px;font-weight:700;color:var(--accent2);}
+.iva-row{display:flex;align-items:center;gap:10px;margin-top:12px;}
+.sell-block{background:linear-gradient(135deg,rgba(74,222,128,.08),rgba(74,222,128,.03));border:1px solid rgba(74,222,128,.25);border-radius:10px;padding:12px 14px;margin-top:10px;text-align:center;}
+.sell-lbl{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--green);font-family:'Space Mono',monospace;margin-bottom:4px;opacity:.8;}
+.sell-val{font-size:26px;font-weight:800;color:var(--green);letter-spacing:-1px;}
+.sell-info{font-size:11px;color:rgba(74,222,128,.6);margin-top:3px;font-family:'Space Mono',monospace;}
+.vat-block{background:linear-gradient(135deg,rgba(255,179,71,.1),rgba(255,179,71,.03));border:1px solid rgba(255,179,71,.3);border-radius:10px;padding:12px 14px;margin-top:8px;text-align:center;}
+.vat-lbl{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--accent2);font-family:'Space Mono',monospace;margin-bottom:4px;opacity:.8;}
+.vat-val{font-size:22px;font-weight:800;color:var(--accent2);}
+.vat-info{font-size:11px;color:rgba(255,179,71,.6);margin-top:3px;font-family:'Space Mono',monospace;}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:9px 16px;border-radius:9px;border:none;cursor:pointer;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;transition:all .18s;}
+.btn-p{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#0a0a0f;width:100%;justify-content:center;margin-top:8px;}
+.btn-p:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(255,107,53,.3);}
+.btn-s{background:var(--surface2);border:1px solid var(--border);color:var(--text);width:100%;justify-content:center;margin-top:8px;}
+.btn-s:hover{border-color:var(--accent);color:var(--accent);}
+
+/* ── PILLS ── */
+.pills{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
+.pill{border-radius:20px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:11px;font-weight:600;font-family:'Syne',sans-serif;display:flex;align-items:center;gap:5px;padding:0 10px;white-space:nowrap;}
+.pill-name{cursor:pointer;padding:6px 0;}
+.pill-name:hover{color:var(--accent);}
+.pill-add{border-style:dashed;color:var(--muted);cursor:pointer;padding:6px 10px;}
+.pill-add:hover{border-color:var(--accent);color:var(--accent);}
+.pill-del{font-size:14px;line-height:1;opacity:.35;cursor:pointer;padding:6px 0;}
+.pill-del:hover{opacity:1;color:var(--red);}
+.pill.active-pill{border-color:var(--accent);background:rgba(255,107,53,.1);}
+
+/* ── PROFILE CARDS ── */
+.pcard{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;position:relative;transition:border-color .2s;}
+.pcard:hover{border-color:rgba(255,107,53,.3);}
+.pcard-name{font-weight:700;font-size:14px;margin-bottom:5px;display:flex;align-items:center;gap:7px;}
+.pcard-detail{font-size:11px;color:var(--muted);font-family:'Space Mono',monospace;margin-top:2px;}
+.pcard-del{position:absolute;top:10px;right:10px;background:rgba(248,113,113,.1);border:none;color:var(--red);width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s;}
+.pcard:hover .pcard-del{opacity:1;}
+.pcard-btns{display:flex;gap:7px;margin-top:10px;}
+.pcard-btns button{padding:5px 12px;border-radius:8px;font-size:11px;cursor:pointer;font-family:'Syne',sans-serif;font-weight:700;min-height:32px;}
+.btn-use{border:1px solid var(--accent);background:rgba(255,107,53,.1);color:var(--accent);}
+.btn-edit{border:1px solid var(--border);background:var(--surface);color:var(--text);}
+
+/* ── HISTORY ── */
+.history-item{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;position:relative;}
+.history-item:hover .pcard-del{opacity:1;}
+
+/* ── TOOLTIPS ── */
+.tip{position:relative;display:inline-flex;}
+.tip-icon{width:14px;height:14px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);color:var(--muted);font-size:9px;display:flex;align-items:center;justify-content:center;cursor:help;margin-left:3px;font-style:normal;}
+.tip-text{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:11px;padding:7px 11px;border-radius:8px;width:210px;z-index:50;display:none;line-height:1.5;font-weight:400;font-family:'Syne',sans-serif;text-transform:none;letter-spacing:0;}
+.tip:hover .tip-text{display:block;}
+
+/* ── TOAST ── */
+#toast-wrap{position:fixed;bottom:38px;right:18px;z-index:9999;display:flex;flex-direction:column;gap:7px;}
+.toast-msg{background:var(--surface2);border:1px solid var(--border);border-left:4px solid var(--green);border-radius:var(--radius);padding:10px 14px;font-size:12px;color:var(--text);min-width:220px;animation:slideIn .22s ease;display:flex;align-items:center;gap:8px;}
+.toast-msg.err{border-left-color:var(--red);}
+@keyframes slideIn{from{transform:translateX(40px);opacity:0}to{transform:none;opacity:1}}
+
+/* ── SYNC PAGE ── */
+.sync-status-box{background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:12px 14px;font-size:12px;font-family:'Space Mono',monospace;color:var(--muted);margin-bottom:12px;}
+.fi-row{display:flex;gap:8px;margin-bottom:6px;}
+.fi-row input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:9px 12px;color:var(--text);font-family:'Space Mono',monospace;font-size:12px;outline:none;}
+.fi-row input:focus{border-color:var(--accent);}
+.fi-row button{padding:9px 14px;border-radius:9px;border:1px solid var(--accent);background:rgba(255,107,53,.1);color:var(--accent);font-family:'Syne',sans-serif;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;}
+
+/* ── RESPONSIVE ── */
+@media(max-width:1100px){
+  :root{--sidebar:200px;}
+  .calc-grid{grid-template-columns:1fr 320px;}
+}
+@media(max-width:900px){
+  :root{--sidebar:0px;}
+  #sidebar{transform:translateX(-100%);width:270px!important;transition:transform var(--tr);z-index:300;box-shadow:4px 0 24px rgba(0,0,0,.6);}
+  #sidebar.mobile-open{transform:translateX(0);}
+  #sidebar.collapsed{transform:translateX(-100%);}
+  #sidebar-toggle{display:none;}
+  #main{margin-left:0!important;}
+  #drive-bar{left:0!important;}
+  #mobile-menu-btn{display:flex!important;}
+  .calc-grid{grid-template-columns:1fr;}
+  .result-panel{position:static;}
+  /* Sposta il riepilogo sopra i campi su mobile */
+  .calc-grid{display:flex;flex-direction:column;}
+  .calc-grid .result-panel{order:-1;}
+}
+@media(max-width:640px){
+  #content{padding:12px;padding-bottom:52px;}
+  .fg{grid-template-columns:1fr 1fr;}
+  .fg.c3{grid-template-columns:1fr 1fr;}
+  .card{padding:14px;}
+  .lbox{padding:28px 22px;}
+}
+@media(max-width:400px){
+  .fg,.fg.c3{grid-template-columns:1fr;}
+}
+@media(hover:none){.ni-item:hover{background:transparent;color:var(--muted);}}
+@media print{#sidebar,#drive-bar,#topbar{display:none!important;}#main{margin-left:0!important;}}
+</style>
+</head>
+<body>
+
+<!-- LOGIN OVERLAY -->
+<div id="login-overlay">
+  <div class="lbox">
+    <div class="llogo">
+      <svg width="34" height="34" viewBox="0 0 32 32" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="22" width="28" height="8" rx="2"/><line x1="5" y1="22" x2="5" y2="6"/><line x1="27" y1="22" x2="27" y2="6"/>
+        <line x1="5" y1="6" x2="27" y2="6"/><line x1="5" y1="14" x2="27" y2="14"/>
+        <rect x="13" y="11" width="6" height="6" rx="1"/><path d="M15 17 L15 20 L16 21 L17 20 L17 17"/>
+      </svg>
+    </div>
+    <div class="ltitle">3D<span>CALC</span></div>
+    <div class="lsub">Accedi con Google per sincronizzare stampanti, filamenti e preventivi su tutti i tuoi dispositivi.</div>
+    <button class="lgbtn" onclick="driveSignIn()">
+      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="G">
+      Accedi con Google
+    </button>
+    <button class="lskip" onclick="skipLogin()">Continua senza Google Drive (solo locale)</button>
+    <div class="lnote">🔒 I dati restano nel tuo Google Drive personale.</div>
+  </div>
+</div>
+
+<div id="mobile-overlay" onclick="closeMobileMenu()"></div>
+
+<!-- SIDEBAR -->
+<div id="sidebar">
+  <div id="sidebar-logo">
+    <div class="logo-icon">
+      <svg width="24" height="24" viewBox="0 0 32 32" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="22" width="28" height="8" rx="2"/><line x1="5" y1="22" x2="5" y2="6"/><line x1="27" y1="22" x2="27" y2="6"/>
+        <line x1="5" y1="6" x2="27" y2="6"/><line x1="5" y1="14" x2="27" y2="14"/>
+        <rect x="13" y="11" width="6" height="6" rx="1"/><path d="M15 17 L15 20 L16 21 L17 20 L17 17"/>
+        <rect x="7" y="22" width="18" height="3" rx=".5"/>
+      </svg>
+    </div>
+    <div class="logo-text">3D<span>CALC</span><div class="logo-sub">Costi Stampa 3D</div></div>
+  </div>
+  <div id="sidebar-toggle" onclick="toggleSidebar()">◀</div>
+  <nav>
+    <div class="nav-sec-label">Calcolatore</div>
+    <div class="ni-item active" onclick="showPage('calc',this)"><span class="ico">🧮</span><span class="lbl">Calcola</span></div>
+    <div class="nav-sec-label">Configurazione</div>
+    <div class="ni-item" onclick="showPage('profiles',this)">
+      <span class="ico">
+        <svg width="16" height="16" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="2" y="22" width="28" height="8" rx="2"/><line x1="5" y1="22" x2="5" y2="6"/><line x1="27" y1="22" x2="27" y2="6"/><line x1="5" y1="6" x2="27" y2="6"/><line x1="5" y1="14" x2="27" y2="14"/><rect x="13" y="11" width="6" height="6" rx="1"/><path d="M15 17 L15 20 L16 21 L17 20 L17 17"/></svg>
+      </span>
+      <span class="lbl">Stampanti</span>
+    </div>
+    <div class="ni-item" onclick="showPage('filaments',this)"><span class="ico">🧵</span><span class="lbl">Filamenti</span></div>
+    <div class="nav-sec-label">Archivio</div>
+    <div class="ni-item" onclick="showPage('history',this)"><span class="ico">📋</span><span class="lbl">Storico preventivi</span></div>
+    <div class="nav-sec-label">Sistema</div>
+    <div class="ni-item" onclick="showPage('sync',this)"><span class="ico">☁️</span><span class="lbl">Sincronizzazione</span></div>
+    <div class="ni-item" onclick="showPage('revisions',this)"><span class="ico">🕓</span><span class="lbl">Revisioni</span></div>
+    <div class="ni-item" onclick="exportData()"><span class="ico">📤</span><span class="lbl">Esporta backup</span></div>
+    <div class="ni-item" onclick="document.getElementById('import-trigger').click()"><span class="ico">📥</span><span class="lbl">Importa backup</span></div>
+    <div class="ni-item" onclick="toggleTheme()"><span class="ico" id="theme-ico">☀️</span><span class="lbl" id="theme-lbl">Tema chiaro</span></div>
+    <input type="file" id="import-trigger" accept=".json" style="display:none" onchange="importDataFn(event)">
+  </nav>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+  <div id="topbar">
+    <button id="mobile-menu-btn" onclick="toggleMobileMenu()">☰</button>
+    <div class="topbar-title" id="topbar-title">Calcolatore</div>
+    <div style="display:flex;gap:8px;">
+      <button class="tbtn" onclick="toggleTheme()" id="topbar-theme-btn">☀️</button>
+      <button class="tbtn" onclick="exportData()">📤 Esporta</button>
+      <button class="tbtn" onclick="resetForm()" id="btn-reset" style="display:none">🔄 Reset</button>
+    </div>
+  </div>
+
+  <div id="content">
+
+    <!-- ══ CALCOLATORE ══ -->
+    <div id="page-calc" class="page active">
+      <div class="calc-grid">
+
+        <!-- colonna sinistra -->
+        <div>
+          <div class="sec-title">01 — Materiale</div>
+          <div class="card">
+            <div class="card-title"><div class="card-icon ico-orange">🧵</div>Filamento</div>
+            <div class="fg">
+              <div class="field"><label>Peso usato <span class="tip"><i class="tip-icon">?</i><span class="tip-text">Grammi consumati per questa stampa. Lo slicer lo mostra nel riepilogo.</span></span></label><div class="iw"><input type="number" id="weightUsed" value="50" min="0" oninput="calc()"><span class="unit">g</span></div></div>
+              <div class="field"><label>Tipo materiale</label><select id="materialType" onchange="calc()"><option>PLA</option><option>PETG</option><option>ABS</option><option>TPU</option><option>ASA</option><option>Nylon</option><option>Resina</option><option>Altro</option></select></div>
+            </div>
+            <div class="fg">
+              <div class="field"><label>Costo bobina</label><div class="iw"><input type="number" id="spoolCost" value="25" min="0" step=".5" oninput="calc()"><span class="unit">€</span></div></div>
+              <div class="field"><label>Peso bobina <span class="tip"><i class="tip-icon">?</i><span class="tip-text">Necessario per calcolare il costo per grammo: €bobina ÷ g_bobina × g_usati.</span></span></label><div class="iw"><input type="number" id="spoolWeight" value="1000" min="1" oninput="calc()"><span class="unit">g</span></div></div>
+            </div>
+            <div class="cbadge" id="cost-per-g">€ 0.0250/g <span>→ stampa: € 0.00</span></div>
+            <div class="fg">
+              <div class="field"><label>Eff. materiale <span class="tip"><i class="tip-icon">?</i><span class="tip-text">Moltiplicatore per sprechi (supporti, purghe). 1.0 = nessuno spreco; 1.1 = +10%.</span></span></label><div class="iw"><input type="number" id="materialEfficiency" value="1.1" min="1" max="3" step=".05" oninput="calc()"><span class="unit">×</span></div></div>
+              <div class="field"><label>Fattore buffer <span class="tip"><i class="tip-icon">?</i><span class="tip-text">Margine di sicurezza sul totale. 1.0 = nessuno; 1.3 = +30%.</span></span></label><div class="iw"><input type="number" id="bufferFactor" value="1.0" min="1" max="3" step=".05" oninput="calc()"><span class="unit">×</span></div></div>
+            </div>
+            <div class="field"><label>Filamento rapido</label><div class="pills" id="filament-quick"></div></div>
+          </div>
+
+          <div class="sec-title">02 — Stampa</div>
+          <div class="card">
+            <div class="card-title">
+              <div class="card-icon ico-blue"><svg width="16" height="16" viewBox="0 0 32 32" fill="none" stroke="#60a5fa" stroke-width="2.2" stroke-linecap="round"><rect x="2" y="22" width="28" height="8" rx="2"/><line x1="5" y1="22" x2="5" y2="6"/><line x1="27" y1="22" x2="27" y2="6"/><line x1="5" y1="6" x2="27" y2="6"/><line x1="5" y1="14" x2="27" y2="14"/><rect x="13" y="11" width="6" height="6" rx="1"/><path d="M15 17 L15 20 L16 21 L17 20 L17 17"/></svg></div>
+              Parametri Stampa
+            </div>
+            <div class="fg c3">
+              <div class="field"><label>Ore</label><div class="iw"><input type="number" id="printHours" value="4" min="0" oninput="calc()"><span class="unit">h</span></div></div>
+              <div class="field"><label>Minuti</label><div class="iw"><input type="number" id="printMinutes" value="30" min="0" max="59" oninput="calc()"><span class="unit">min</span></div></div>
+              <div class="field"><label>Fail % <span class="tip"><i class="tip-icon">?</i><span class="tip-text">% media di stampe fallite. Aggiunge un costo proporzionale.</span></span></label><div class="iw"><input type="number" id="failRate" value="5" min="0" max="100" oninput="calc()"><span class="unit">%</span></div></div>
+            </div>
+            <div class="field"><label>Stampante attiva</label><div class="pills" id="printer-quick"></div></div>
+            <div class="cbadge" id="printer-info" style="margin-top:10px;">Nessuna stampante selezionata</div>
+          </div>
+
+          <div class="sec-title">03 — Lavoro & Costi</div>
+          <div class="card">
+            <div class="card-title"><div class="card-icon ico-yellow">👷</div>Manodopera & Extra</div>
+            <div class="fg">
+              <div class="field"><label>Tariffa oraria <span class="tip"><i class="tip-icon">?</i><span class="tip-text">Il tuo valore orario per lavoro manuale (preparazione, post-processing...).</span></span></label><div class="iw"><input type="number" id="laborRate" value="20" min="0" oninput="calc()"><span class="unit">€/h</span></div></div>
+              <div class="field"><label>Tempo lavorato</label><div class="iw"><input type="number" id="laborTime" value="0.5" min="0" step=".25" oninput="calc()"><span class="unit">h</span></div></div>
+            </div>
+            <div class="fg">
+              <div class="field"><label>Setup aggiuntivo <span class="tip"><i class="tip-icon">?</i><span class="tip-text">Costo di design, licenze file, ecc.</span></span></label><div class="iw"><input type="number" id="setupCost" value="0" min="0" oninput="calc()"><span class="unit">€</span></div></div>
+              <div class="field"><label>Imballaggio</label><div class="iw"><input type="number" id="packagingCost" value="2" min="0" step=".5" oninput="calc()"><span class="unit">€</span></div></div>
+            </div>
+            <div class="fg">
+              <div class="field"><label>Costi fissi/mese <span class="tip"><i class="tip-icon">?</i><span class="tip-text">Affitto, abbonamenti... ripartiti sulle ore mensili.</span></span></label><div class="iw"><input type="number" id="fixedCosts" value="0" min="0" oninput="calc()"><span class="unit">€</span></div></div>
+              <div class="field"><label>Ore attività/mese</label><div class="iw"><input type="number" id="monthlyHours" value="100" min="1" oninput="calc()"><span class="unit">h</span></div></div>
+            </div>
+          </div>
+
+          <div class="sec-title">04 — Quantità</div>
+          <div class="card">
+            <div class="card-title"><div class="card-icon ico-purple">📦</div>Produzione</div>
+            <div class="fg">
+              <div class="field"><label>Pezzi totali</label><div class="iw"><input type="number" id="quantity" value="1" min="1" oninput="calc()"><span class="unit">pz</span></div></div>
+              <div class="field"><label>Pezzi/piatto <span class="tip"><i class="tip-icon">?</i><span class="tip-text">Pezzi stampabili contemporaneamente. Ottimizza il tempo macchina.</span></span></label><div class="iw"><input type="number" id="piecesPerPlate" value="1" min="1" oninput="calc()"><span class="unit">pz</span></div></div>
+            </div>
+          </div>
+
+          <div class="card" style="margin-bottom:0;">
+            <div class="fg c1">
+              <div class="field"><label>Nome progetto</label><input type="text" id="projectName" placeholder="Es. Supporto monitor, Portavaso..." style="padding-right:12px;"></div>
+            </div>
+            <button class="btn btn-p" onclick="saveToHistory()">💾 Salva nello Storico</button>
+          </div>
+        </div>
+
+        <!-- colonna destra — riepilogo -->
+        <div class="result-panel">
+          <div class="result-card">
+            <div class="result-head">
+              <h3>Riepilogo Costi</h3>
+              <span id="qty-label" style="font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);">× 1 pz</span>
+            </div>
+            <div class="result-body">
+              <div class="cost-row"><span class="cost-label"><span class="dot" style="background:#ff6b35"></span>Materiale</span><span class="cost-val" id="r-material">€ 0.00</span></div>
+              <div class="cost-row"><span class="cost-label"><span class="dot" style="background:#60a5fa"></span>Elettricità</span><span class="cost-val" id="r-electricity">€ 0.00</span></div>
+              <div class="cost-row"><span class="cost-label"><span class="dot" style="background:#f59e0b"></span>Manodopera</span><span class="cost-val" id="r-labor">€ 0.00</span></div>
+              <div class="cost-row"><span class="cost-label"><span class="dot" style="background:#a78bfa"></span>Ammortamento</span><span class="cost-val" id="r-depreciation">€ 0.00</span></div>
+              <div class="cost-row"><span class="cost-label"><span class="dot" style="background:#34d399"></span>Imballaggio</span><span class="cost-val" id="r-packaging">€ 0.00</span></div>
+              <div class="cost-row"><span class="cost-label"><span class="dot" style="background:#94a3b8"></span>Fissi+Setup</span><span class="cost-val" id="r-fixed">€ 0.00</span></div>
+              <div class="cost-row"><span class="cost-label"><span class="dot" style="background:#fb7185"></span>Fallimenti</span><span class="cost-val" id="r-fail">€ 0.00</span></div>
+              <div class="total-block">
+                <div class="total-lbl">Costo Totale (incl. buffer)</div>
+                <div class="total-val" id="r-total"><span>€</span>0.00</div>
+                <div class="unit-cost" id="r-unit-cost"></div>
+              </div>
+              <div class="chart-wrap">
+                <canvas id="pie-chart" width="160" height="160"></canvas>
+                <div class="chart-legend" id="chart-legend"></div>
+              </div>
+              <div class="margin-wrap">
+                <div class="margin-head">
+                  <span class="margin-lbl">Margine profitto</span>
+                  <span class="margin-val" id="margin-display">30%</span>
+                </div>
+                <input type="range" id="marginSlider" min="0" max="200" value="30" oninput="updateMargin()">
+                <div class="iva-row">
+                  <label style="white-space:nowrap;flex-shrink:0;">IVA</label>
+                  <div class="iw" style="flex:1;"><input type="number" id="vatRate" value="22" min="0" max="100" oninput="updateMargin()" style="padding-right:28px;"><span class="unit">%</span></div>
+                </div>
+              </div>
+              <div class="sell-block">
+                <div class="sell-lbl">💰 Prezzo vendita (IVA escl.)</div>
+                <div class="sell-val" id="r-sell-price">€ 0.00</div>
+                <div class="sell-info" id="r-profit-info"></div>
+              </div>
+              <div class="vat-block">
+                <div class="vat-lbl">🧾 Prezzo al cliente (IVA incl.)</div>
+                <div class="vat-val" id="r-sell-vat">€ 0.00</div>
+                <div class="vat-info" id="r-vat-amount"></div>
+              </div>
+              <button class="btn btn-s" onclick="resetForm()">🔄 Reset valori</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ STAMPANTI ══ -->
+    <div id="page-profiles" class="page">
+      <div style="max-width:700px;">
+        <div class="sec-title">Configura Stampante</div>
+        <div class="card">
+          <div class="card-title">
+            <div class="card-icon ico-blue"><svg width="16" height="16" viewBox="0 0 32 32" fill="none" stroke="#60a5fa" stroke-width="2.2" stroke-linecap="round"><rect x="2" y="22" width="28" height="8" rx="2"/><line x1="5" y1="22" x2="5" y2="6"/><line x1="27" y1="22" x2="27" y2="6"/><line x1="5" y1="6" x2="27" y2="6"/><line x1="5" y1="14" x2="27" y2="14"/><rect x="13" y="11" width="6" height="6" rx="1"/><path d="M15 17 L15 20 L16 21 L17 20 L17 17"/></svg></div>
+            <span id="p-form-title">Nuovo Profilo</span>
+          </div>
+          <div class="fg">
+            <div class="field"><label>Nome stampante</label><input type="text" id="p-name" placeholder="Es. Bambu Lab A1 Mini" style="padding-right:12px;"></div>
+            <div class="field"><label>Consumo <span class="tip"><i class="tip-icon">?</i><span class="tip-text">Watt medi assorbiti durante la stampa.</span></span></label><div class="iw"><input type="number" id="p-watts" value="170" min="0" oninput="updateProfilePreview()"><span class="unit">W</span></div></div>
+          </div>
+          <div class="fg c3">
+            <div class="field"><label>Acquisto</label><div class="iw"><input type="number" id="p-price" value="299" min="0" oninput="updateProfilePreview()"><span class="unit">€</span></div></div>
+            <div class="field"><label>Extra <span class="tip"><i class="tip-icon">?</i><span class="tip-text">Accessori, upgrade, ecc.</span></span></label><div class="iw"><input type="number" id="p-extra" value="0" min="0" oninput="updateProfilePreview()"><span class="unit">€</span></div></div>
+            <div class="field"><label>Vita stimata</label><div class="iw"><input type="number" id="p-lifeYears" value="3" min="1" oninput="updateProfilePreview()"><span class="unit">anni</span></div></div>
+          </div>
+          <div class="fg c3">
+            <div class="field"><label>Manut./anno <span class="tip"><i class="tip-icon">?</i><span class="tip-text">Costo annuo medio per ugelli, cinghie, ecc.</span></span></label><div class="iw"><input type="number" id="p-maintenance" value="75" min="0" oninput="updateProfilePreview()"><span class="unit">€</span></div></div>
+            <div class="field"><label>Uptime %</label><div class="iw"><input type="number" id="p-uptime" value="20" min="1" max="100" oninput="updateProfilePreview()"><span class="unit">%</span></div></div>
+            <div class="field"><label>€/kWh</label><div class="iw"><input type="number" id="p-electricity" value="0.25" step=".01" oninput="updateProfilePreview()"><span class="unit">€</span></div></div>
+          </div>
+          <div class="cbadge" id="p-depr-computed">Ammortamento calcolato: — €/h</div>
+          <div class="fg c1" style="margin-bottom:14px;">
+            <div class="field"><label>Note</label><input type="text" id="p-notes" placeholder="Es. ugello 0.4mm, AMS..." style="padding-right:12px;"></div>
+          </div>
+          <input type="hidden" id="p-edit-id" value="">
+          <div style="display:flex;gap:10px;">
+            <button class="btn btn-p" onclick="saveProfile()" style="width:auto;padding:9px 20px;margin-top:0;">💾 Salva</button>
+            <button class="btn btn-s" onclick="cancelEditProfile()" id="p-cancel-btn" style="width:auto;padding:9px 20px;margin-top:0;display:none;">Annulla</button>
+          </div>
+        </div>
+        <div class="sec-title">Profili Salvati</div>
+        <div id="profiles-list"></div>
+      </div>
+    </div>
+
+    <!-- ══ FILAMENTI ══ -->
+    <div id="page-filaments" class="page">
+      <div style="max-width:700px;">
+        <div class="sec-title">Aggiungi Filamento</div>
+        <div class="card">
+          <div class="card-title"><div class="card-icon ico-orange">🧵</div>Nuovo Filamento</div>
+          <div class="fg c3">
+            <div class="field"><label>Nome / Brand</label><input type="text" id="f-name" placeholder="Es. Bambu PLA Basic" style="padding-right:12px;"></div>
+            <div class="field"><label>Tipo</label><select id="f-type"><option>PLA</option><option>PETG</option><option>ABS</option><option>TPU</option><option>ASA</option><option>Nylon</option><option>Altro</option></select></div>
+            <div class="field"><label>Colore</label><input type="text" id="f-color" placeholder="Es. Rosso" style="padding-right:12px;"></div>
+          </div>
+          <div class="fg">
+            <div class="field"><label>Costo bobina</label><div class="iw"><input type="number" id="f-cost" value="25" min="0" step=".5" oninput="updateFilamentPreview()"><span class="unit">€</span></div></div>
+            <div class="field"><label>Peso bobina</label><div class="iw"><input type="number" id="f-weight" value="1000" min="1" step="100" oninput="updateFilamentPreview()"><span class="unit">g</span></div></div>
+          </div>
+          <div class="cbadge" id="f-preview" style="margin-bottom:14px;">€ 0.0250/g · € 25.00/kg</div>
+          <button class="btn btn-p" onclick="saveFilament()" style="width:auto;padding:9px 20px;margin-top:0;">💾 Salva Filamento</button>
+        </div>
+        <div class="sec-title">Filamenti Salvati</div>
+        <div id="filaments-list"></div>
+      </div>
+    </div>
+
+    <!-- ══ STORICO ══ -->
+    <div id="page-history" class="page">
+      <div style="max-width:700px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+          <div class="sec-title" style="margin:0;flex:1;">Storico Preventivi</div>
+          <button class="btn btn-s" onclick="clearHistory()" style="width:auto;padding:6px 14px;margin-top:0;font-size:12px;">🗑️ Cancella tutto</button>
+        </div>
+        <div id="history-list"></div>
+      </div>
+    </div>
+
+    <!-- ══ SYNC ══ -->
+    <div id="page-sync" class="page">
+      <div style="max-width:580px;">
+        <div class="sec-title">Sincronizzazione Google Drive</div>
+        <div class="card">
+          <div class="card-title"><div class="card-icon ico-blue">☁️</div>Stato Connessione</div>
+          <div class="sync-status-box" id="sync-status-text">Non connesso</div>
+          <button class="btn btn-s" onclick="driveSwitchAccount()" style="width:auto;padding:8px 16px;margin-top:0;">🔄 Cambia account Google</button>
+        </div>
+        <div class="card">
+          <div class="card-title"><div class="card-icon ico-orange">📤</div>Backup manuale</div>
+          <p style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:14px;">Scarica un file <code style="background:var(--surface2);padding:2px 6px;border-radius:4px;font-size:12px;color:var(--accent);">.json</code> come backup aggiuntivo oltre Drive.</p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button class="btn btn-p" onclick="exportData()" style="width:auto;padding:9px 18px;margin-top:0;">📥 Scarica backup.json</button>
+            <button class="btn btn-s" onclick="document.getElementById('import-trigger').click()" style="width:auto;padding:9px 18px;margin-top:0;">📂 Importa backup.json</button>
+          </div>
+        </div>
+        <div class="card" style="border-color:rgba(96,165,250,.3);">
+          <div class="card-title"><div class="card-icon ico-blue">💡</div>Come funziona</div>
+          <div style="font-size:13px;color:var(--muted);line-height:1.9;">
+            <div><span style="color:var(--accent);font-weight:700;">1.</span> Accedi con Google → i dati vengono salvati automaticamente su Drive</div>
+            <div><span style="color:var(--accent);font-weight:700;">2.</span> Apri l'app su un altro dispositivo con lo stesso account Google</div>
+            <div><span style="color:var(--accent);font-weight:700;">3.</span> I dati si sincronizzano automaticamente ogni 30 secondi</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ REVISIONI ══ -->
+    <div id="page-revisions" class="page">
+      <div style="max-width:600px;">
+        <div class="sec-title">Revisioni Automatiche</div>
+        <div class="card">
+          <div class="card-title"><div class="card-icon ico-blue">🕓</div>Cronologia salvataggi</div>
+          <p style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:16px;">
+            L'app salva automaticamente fino a <strong style="color:var(--text);">5 revisioni</strong> ogni volta che i dati vengono modificati. Puoi ripristinare qualsiasi stato precedente senza perdere la revisione corrente.
+          </p>
+          <div id="revisions-list"></div>
+          <button class="btn btn-p" onclick="saveRevision();renderRevisions();toast('💾 Revisione salvata manualmente!');" style="max-width:220px;margin-top:4px;">💾 Salva revisione ora</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- #content -->
+
+  <!-- MODAL RIPRISTINO -->
+  <div id="modal-restore" style="position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:400;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .2s;">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;max-width:420px;width:100%;">
+      <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:17px;margin-bottom:16px;">♻️ Ripristina revisione</div>
+      <div style="background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.3);border-radius:8px;padding:11px;margin-bottom:14px;font-size:12px;color:var(--red);">⚠️ I dati correnti verranno salvati come nuova revisione prima del ripristino.</div>
+      <div id="modal-restore-info" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:13px;margin-bottom:20px;line-height:1.7;"></div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button onclick="closeRestoreModal()" style="padding:9px 18px;border-radius:9px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-family:'Syne',sans-serif;font-size:13px;font-weight:700;cursor:pointer;">Annulla</button>
+        <button onclick="confirmRestore()" style="padding:9px 18px;border-radius:9px;border:none;background:var(--accent);color:#0a0a0f;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;cursor:pointer;">♻️ Ripristina</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DRIVE BAR -->
+  <div id="drive-bar">
+    <div class="ddot" id="drive-dot"></div>
+    <span class="dlabel" id="drive-label">Non connesso</span>
+    <div class="dacts">
+      <span id="live-indicator" style="display:none;font-size:11px;color:var(--blue);">🔄 Aggiornamento...</span>
+      <button onclick="driveSaveNow()" id="btn-drive-save" style="display:none">💾 Salva ora</button>
+      <button onclick="driveSwitchAccount()" id="btn-drive-account" style="display:none"></button>
+      <button onclick="exportData()">📤 Esporta</button>
+    </div>
+  </div>
+
+</div><!-- #main -->
+
+<div id="toast-wrap"></div>
+
+<script>
+// ══ SVG PRINTER ══
+const PRINTER_SVG=`<svg width="34" height="34" viewBox="0 0 32 32" fill="none" stroke="#7a7a9a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="22" width="28" height="8" rx="2"/><line x1="5" y1="22" x2="5" y2="6"/><line x1="27" y1="22" x2="27" y2="6"/><line x1="5" y1="6" x2="27" y2="6"/><line x1="5" y1="14" x2="27" y2="14"/><rect x="13" y="11" width="6" height="6" rx="1"/><path d="M15 17 L15 20 L16 21 L17 20 L17 17"/></svg>`;
+
+// ══ DATA ══
+let data={profiles:null,filaments:null,history:[]};
+(function migrate(){
+  try{const db=localStorage.getItem('3dc2_db');if(db){const p=JSON.parse(db);data.profiles=p.profiles||null;data.filaments=p.filaments||null;data.history=p.history||[];}}catch(e){}
+  if(!data.profiles){try{data.profiles=JSON.parse(localStorage.getItem('3dc2_profiles')||'null');}catch(e){}}
+  if(!data.filaments){try{data.filaments=JSON.parse(localStorage.getItem('3dc2_filaments')||'null');}catch(e){}}
+})();
+if(!data.profiles)data.profiles=[{id:1,name:'Bambu Lab A1 Mini',watts:170,price:299,extra:0,lifeYears:3,maintenance:75,uptime:20,electricity:0.25,notes:'0.4mm ugello · 180×180×180mm'}];
+if(!data.filaments)data.filaments=[{id:1,name:'PLA Basic',type:'PLA',color:'Bianco',cost:20,weight:1000},{id:2,name:'PETG Standard',type:'PETG',color:'Nero',cost:26,weight:1000}];
+
+let _activePrinter=null;
+
+function saveAll(){
+  saveRevision();
+  localStorage.setItem('3dc2_db',JSON.stringify(data));
+  if(typeof driveScheduleSave==='function')driveScheduleSave();
+}
+function loadData(){try{const s=localStorage.getItem('3dc2_db');if(s){const p=JSON.parse(s);if(p.profiles)data.profiles=p.profiles;if(p.filaments)data.filaments=p.filaments;if(p.history)data.history=p.history;}}catch(e){}}
+function renderAll(){if(data.profiles.length&&!_activePrinter)applyPrinter(data.profiles[0].id);else renderQuickButtons();calc();}
+
+// ══ SIDEBAR ══
+function toggleSidebar(){
+  const sb=document.getElementById('sidebar');
+  sb.classList.toggle('collapsed');
+  document.getElementById('sidebar-toggle').textContent=sb.classList.contains('collapsed')?'▶':'◀';
+}
+function toggleMobileMenu(){
+  document.getElementById('sidebar').classList.toggle('mobile-open');
+  document.getElementById('mobile-overlay').classList.toggle('open');
+}
+function closeMobileMenu(){
+  document.getElementById('sidebar').classList.remove('mobile-open');
+  document.getElementById('mobile-overlay').classList.remove('open');
+}
+
+// ══ NAVIGATION ══
+const PAGE_TITLES={calc:'Calcolatore',profiles:'Stampanti',filaments:'Filamenti',history:'Storico Preventivi',sync:'Sincronizzazione',revisions:'Revisioni'};
+function showPage(p,el){
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.ni-item').forEach(x=>x.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  if(el)el.classList.add('active');
+  document.getElementById('topbar-title').textContent=PAGE_TITLES[p]||p;
+  document.getElementById('btn-reset').style.display=p==='calc'?'':'none';
+  if(p==='profiles')renderProfiles();
+  if(p==='filaments')renderFilaments();
+  if(p==='history')renderHistory();
+  if(p==='calc')renderQuickButtons();
+  if(p==='revisions')renderRevisions();
+  if(p==='sync'){const el=document.getElementById('sync-status-text');if(el)el.textContent=driveAccessToken?`✓ Connesso come ${driveUserEmail}`:'Non connesso — accedi con Google';}
+  closeMobileMenu();
+}
+
+// ══ CALC ══
+function v(id){return parseFloat(document.getElementById(id).value)||0;}
+function calc(){
+  const wu=v('weightUsed'),sw=v('spoolWeight'),sc=v('spoolCost');
+  const ph=v('printHours'),pm=v('printMinutes'),fr=v('failRate');
+  const lr=v('laborRate'),lt=v('laborTime');
+  const stup=v('setupCost'),pkg=v('packagingCost');
+  const fc=v('fixedCosts'),mh=v('monthlyHours')||1;
+  const qty=Math.max(1,v('quantity')),ppp=Math.max(1,v('piecesPerPlate'));
+  const eff=Math.max(1,v('materialEfficiency')||1.1),buf=Math.max(1,v('bufferFactor')||1);
+  const pth=ph+pm/60,plates=Math.ceil(qty/ppp);
+  const cpg=sw>0?sc/sw:0,matS=cpg*wu*eff;
+  document.getElementById('cost-per-g').innerHTML=`€${cpg.toFixed(4)}/g <span>→ stampa (${wu}g×${eff}×): €${matS.toFixed(2)}</span>`;
+  const watts=_activePrinter?_activePrinter.watts:170;
+  const elecR=_activePrinter?(_activePrinter.electricity||.25):.25;
+  const deprR=_activePrinter?computeDepreciation(_activePrinter):0;
+  const elec=(watts/1000)*pth*elecR,depr=deprR*pth;
+  const labor=lr*lt,fixed=(fc/mh)*(pth+lt);
+  const tMat=matS*qty,tElec=elec*plates,tLabor=labor*qty;
+  const tDepr=depr*plates,tFixed=fixed*plates+stup,tPkg=pkg*qty;
+  const base=tMat+tElec+tLabor+tDepr+tFixed+tPkg;
+  const fail=base*(fr/100),total=(base+fail)*buf;
+  const f=n=>'€ '+n.toFixed(2);
+  document.getElementById('r-material').textContent=f(tMat);
+  document.getElementById('r-electricity').textContent=f(tElec);
+  document.getElementById('r-labor').textContent=f(tLabor);
+  document.getElementById('r-depreciation').textContent=f(tDepr);
+  document.getElementById('r-packaging').textContent=f(tPkg);
+  document.getElementById('r-fixed').textContent=f(tFixed);
+  document.getElementById('r-fail').textContent=f(fail);
+  document.getElementById('r-total').innerHTML=`<span>€</span>${total.toFixed(2)}`;
+  document.getElementById('qty-label').textContent=`× ${qty} pz`;
+  document.getElementById('r-unit-cost').textContent=qty>1?`≈ €${(total/qty).toFixed(2)}/pezzo`:'';
+  window._totalCost=total;window._qty=qty;
+  updateMargin();
+  drawPie([
+    {l:'Materiale',v:tMat,c:'#ff6b35'},{l:'Elettricità',v:tElec,c:'#60a5fa'},
+    {l:'Manodopera',v:tLabor,c:'#f59e0b'},{l:'Ammort.',v:tDepr,c:'#a78bfa'},
+    {l:'Imball.',v:tPkg,c:'#34d399'},{l:'Fissi',v:tFixed,c:'#94a3b8'},{l:'Fail.',v:fail,c:'#fb7185'}
+  ]);
+}
+
+function updateMargin(){
+  const margin=parseInt(document.getElementById('marginSlider').value);
+  const vat=parseFloat(document.getElementById('vatRate').value)||0;
+  document.getElementById('margin-display').textContent=margin+'%';
+  const total=window._totalCost||0,q=window._qty||1;
+  const sell=total*(1+margin/100),sellVat=sell*(1+vat/100);
+  document.getElementById('r-sell-price').textContent='€ '+sell.toFixed(2);
+  document.getElementById('r-sell-vat').textContent='€ '+sellVat.toFixed(2);
+  document.getElementById('r-vat-amount').textContent=`IVA ${vat}%: +€${(sellVat-sell).toFixed(2)}`;
+  document.getElementById('r-profit-info').textContent=q>1?`Profitto: €${(sell-total).toFixed(2)} tot · €${((sell-total)/q).toFixed(2)}/pz`:`Profitto: €${(sell-total).toFixed(2)}`;
+}
+
+function drawPie(segs){
+  const c=document.getElementById('pie-chart'),ctx=c.getContext('2d');
+  const cx=80,cy=80,r=68;ctx.clearRect(0,0,160,160);
+  const tot=segs.reduce((a,s)=>a+s.v,0);
+  if(tot<=0){ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fillStyle='#2a2a3a';ctx.fill();return;}
+  let st=-Math.PI/2;const valid=segs.filter(s=>s.v>0);
+  valid.forEach(s=>{const a=(s.v/tot)*Math.PI*2;ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,st,st+a);ctx.closePath();ctx.fillStyle=s.c;ctx.fill();st+=a;});
+  ctx.beginPath();ctx.arc(cx,cy,38,0,Math.PI*2);ctx.fillStyle='#111118';ctx.fill();
+  ctx.fillStyle='#e8e8f0';ctx.font='bold 12px Space Mono,monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('€'+tot.toFixed(0),cx,cy);
+  document.getElementById('chart-legend').innerHTML=valid.map(s=>`<div class="leg-item"><span class="leg-dot" style="background:${s.c}"></span>${s.l} ${((s.v/tot)*100).toFixed(0)}%</div>`).join('');
+}
+
+// ══ QUICK PILLS ══
+function renderQuickButtons(){
+  const fq=document.getElementById('filament-quick');
+  if(fq){fq.innerHTML='';
+    data.filaments.forEach(f=>{const d=document.createElement('div');d.className='pill';d.innerHTML=`<span class="pill-name" onclick="applyFilament(${f.id})">${f.name}</span><span class="pill-del" onclick="if(confirm('Rimuovere?')){data.filaments=data.filaments.filter(x=>x.id!==${f.id});saveAll();renderQuickButtons();}">×</span>`;fq.appendChild(d);});
+    const a=document.createElement('div');a.className='pill pill-add';a.textContent='＋ Aggiungi';a.onclick=()=>showPage('filaments',document.querySelectorAll('.ni-item')[2]);fq.appendChild(a);
+  }
+  const pq=document.getElementById('printer-quick');
+  if(pq){pq.innerHTML='';
+    data.profiles.forEach(p=>{const d=document.createElement('div');d.className='pill'+(_activePrinter&&_activePrinter.id===p.id?' active-pill':'');d.innerHTML=`<span class="pill-name" onclick="applyPrinter(${p.id})">${p.name}</span><span class="pill-del" onclick="if(confirm('Rimuovere?')){deleteProfile(${p.id});}">×</span>`;pq.appendChild(d);});
+    const a=document.createElement('div');a.className='pill pill-add';a.textContent='＋ Aggiungi';a.onclick=()=>showPage('profiles',document.querySelectorAll('.ni-item')[1]);pq.appendChild(a);
+  }
+  const pi=document.getElementById('printer-info');
+  if(pi){if(_activePrinter){const d=computeDepreciation(_activePrinter);pi.innerHTML=`<strong style="color:var(--accent)">${_activePrinter.name}</strong> · ${_activePrinter.watts}W · ammort. €${d.toFixed(4)}/h · €${_activePrinter.electricity||.25}/kWh`;}else pi.textContent='Nessuna stampante selezionata';}
+}
+
+function applyFilament(id){const f=data.filaments.find(x=>x.id===id);if(!f)return;document.getElementById('spoolCost').value=f.cost;document.getElementById('spoolWeight').value=f.weight;document.getElementById('materialType').value=f.type;calc();toast(`🧵 ${f.name} applicato`);}
+function applyPrinter(id){const p=data.profiles.find(x=>x.id===id);if(!p)return;_activePrinter=p;calc();renderQuickButtons();toast(`🖨️ ${p.name} applicata`);}
+
+// ══ DEPRECIATION ══
+function computeDepreciation(p){const t=(p.price||0)+(p.extra||0)+(p.maintenance||0)*(p.lifeYears||3);const h=(p.lifeYears||3)*8760*((p.uptime||20)/100);return h>0?t/h:0;}
+
+// ══ PROFILES ══
+function updateProfilePreview(){
+  const p={price:v('p-price'),extra:v('p-extra'),lifeYears:v('p-lifeYears')||3,maintenance:v('p-maintenance'),uptime:v('p-uptime')||20};
+  const d=computeDepreciation(p),hpy=8760*(p.uptime/100);
+  document.getElementById('p-depr-computed').textContent=`Ammortamento: €${d.toFixed(5)}/h · ${hpy.toFixed(0)}h/anno (uptime ${p.uptime}%)`;
+}
+updateProfilePreview();
+
+function saveProfile(){
+  const name=document.getElementById('p-name').value.trim();if(!name){toast('Inserisci il nome',true);return;}
+  const eid=document.getElementById('p-edit-id').value;
+  const profile={id:eid?parseInt(eid):Date.now(),name,watts:v('p-watts')||170,price:v('p-price')||0,extra:v('p-extra')||0,lifeYears:v('p-lifeYears')||3,maintenance:v('p-maintenance')||0,uptime:v('p-uptime')||20,electricity:parseFloat(document.getElementById('p-electricity').value)||.25,notes:document.getElementById('p-notes').value};
+  if(eid){data.profiles=data.profiles.map(p=>p.id===parseInt(eid)?profile:p);if(_activePrinter&&_activePrinter.id===parseInt(eid))_activePrinter=profile;}
+  else data.profiles.push(profile);
+  saveAll();renderProfiles();renderQuickButtons();cancelEditProfile();toast(`✅ ${name} salvata!`);
+}
+
+function editProfile(id){
+  const p=data.profiles.find(x=>x.id===id);if(!p)return;
+  document.getElementById('p-name').value=p.name;document.getElementById('p-watts').value=p.watts;
+  document.getElementById('p-price').value=p.price||0;document.getElementById('p-extra').value=p.extra||0;
+  document.getElementById('p-lifeYears').value=p.lifeYears||3;document.getElementById('p-maintenance').value=p.maintenance||0;
+  document.getElementById('p-uptime').value=p.uptime||20;document.getElementById('p-electricity').value=p.electricity||.25;
+  document.getElementById('p-notes').value=p.notes||'';document.getElementById('p-edit-id').value=p.id;
+  document.getElementById('p-cancel-btn').style.display='';document.getElementById('p-form-title').textContent='Modifica: '+p.name;
+  updateProfilePreview();document.getElementById('content').scrollTop=0;
+}
+
+function cancelEditProfile(){
+  ['p-name','p-notes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('p-watts').value=170;document.getElementById('p-price').value=299;document.getElementById('p-extra').value=0;
+  document.getElementById('p-lifeYears').value=3;document.getElementById('p-maintenance').value=75;
+  document.getElementById('p-uptime').value=20;document.getElementById('p-electricity').value=.25;
+  document.getElementById('p-edit-id').value='';document.getElementById('p-cancel-btn').style.display='none';
+  document.getElementById('p-form-title').textContent='Nuovo Profilo';updateProfilePreview();
+}
+
+function deleteProfile(id){data.profiles=data.profiles.filter(p=>p.id!==id);if(_activePrinter&&_activePrinter.id===id)_activePrinter=null;saveAll();renderProfiles();renderQuickButtons();calc();}
+
+function renderProfiles(){
+  const el=document.getElementById('profiles-list');
+  if(!data.profiles.length){el.innerHTML=`<div style="text-align:center;padding:40px;color:var(--muted)">${PRINTER_SVG}<p style="margin-top:12px;font-size:13px;">Nessuna stampante</p></div>`;return;}
+  el.innerHTML=data.profiles.map(p=>{
+    const d=computeDepreciation(p),hpy=(8760*(p.uptime||20)/100).toFixed(0);
+    const isActive=_activePrinter&&_activePrinter.id===p.id;
+    return `<div class="pcard" style="${isActive?'border-color:var(--accent);':''}">
+      <div class="pcard-name"><svg width="14" height="14" viewBox="0 0 32 32" fill="none" stroke="${isActive?'var(--accent)':'#7a7a9a'}" stroke-width="2.2" stroke-linecap="round"><rect x="2" y="22" width="28" height="8" rx="2"/><line x1="5" y1="22" x2="5" y2="6"/><line x1="27" y1="22" x2="27" y2="6"/><line x1="5" y1="6" x2="27" y2="6"/><line x1="5" y1="14" x2="27" y2="14"/><rect x="13" y="11" width="6" height="6" rx="1"/><path d="M15 17 L15 20 L16 21 L17 20 L17 17"/></svg>${p.name}${isActive?'<span style="font-size:9px;background:rgba(255,107,53,.15);color:var(--accent);padding:2px 8px;border-radius:20px;font-weight:600;">ATTIVA</span>':''}</div>
+      <div class="pcard-detail">${p.watts}W · uptime ${p.uptime}% · ${hpy}h/anno · €${p.electricity||.25}/kWh</div>
+      <div class="pcard-detail">Acquisto €${p.price}+€${p.extra||0} · Manut. €${p.maintenance}/anno · Vita ${p.lifeYears}anni</div>
+      <div class="pcard-detail" style="color:var(--accent);font-weight:700;margin-top:3px;">→ Ammortamento: €${d.toFixed(5)}/h</div>
+      ${p.notes?`<div class="pcard-detail" style="font-style:italic;margin-top:2px;">${p.notes}</div>`:''}
+      <div class="pcard-btns"><button class="btn-use" onclick="applyPrinter(${p.id})">✓ Usa</button><button class="btn-edit" onclick="editProfile(${p.id})">✏️ Modifica</button></div>
+      <button class="pcard-del" onclick="if(confirm('Eliminare?')){deleteProfile(${p.id});}">×</button>
+    </div>`;
+  }).join('');
+}
+
+// ══ FILAMENTS ══
+function updateFilamentPreview(){const c=parseFloat(document.getElementById('f-cost').value)||0,w=parseFloat(document.getElementById('f-weight').value)||1;document.getElementById('f-preview').innerHTML=`€${(c/w).toFixed(4)}/g · €${(c/w*1000).toFixed(2)}/kg`;}
+updateFilamentPreview();
+
+function saveFilament(){
+  const name=document.getElementById('f-name').value.trim();if(!name){toast('Inserisci il nome',true);return;}
+  data.filaments.push({id:Date.now(),name,type:document.getElementById('f-type').value,color:document.getElementById('f-color').value,cost:parseFloat(document.getElementById('f-cost').value)||25,weight:parseFloat(document.getElementById('f-weight').value)||1000});
+  saveAll();renderFilaments();renderQuickButtons();document.getElementById('f-name').value='';document.getElementById('f-color').value='';toast('✅ Filamento salvato!');
+}
+
+function renderFilaments(){
+  const el=document.getElementById('filaments-list');
+  if(!data.filaments.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted);font-size:13px;">🧵 Nessun filamento</div>';return;}
+  el.innerHTML=data.filaments.map(f=>`<div class="pcard"><div class="pcard-name">🧵 ${f.name}${f.color?' — '+f.color:''}</div><div class="pcard-detail">${f.type} · ${f.weight}g · €${f.cost} · <strong style="color:var(--accent)">€${(f.cost/f.weight*1000).toFixed(2)}/kg</strong></div><div class="pcard-btns"><button class="btn-use" onclick="applyFilament(${f.id})">✓ Usa</button></div><button class="pcard-del" onclick="if(confirm('Eliminare?')){data.filaments=data.filaments.filter(f=>f.id!==${f.id});saveAll();renderFilaments();renderQuickButtons();}">×</button></div>`).join('');
+}
+
+// ══ HISTORY ══
+function saveToHistory(){
+  const name=document.getElementById('projectName').value.trim()||'Progetto';
+  const margin=parseInt(document.getElementById('marginSlider').value);
+  data.history.unshift({id:Date.now(),name,date:new Date().toLocaleString('it-IT'),material:document.getElementById('materialType').value,cost:window._totalCost||0,sellPrice:(window._totalCost||0)*(1+margin/100),margin,quantity:Math.max(1,v('quantity'))});
+  if(data.history.length>100)data.history.pop();
+  saveAll();toast('✅ Salvato nello storico!');
+}
+
+function renderHistory(){
+  const el=document.getElementById('history-list');
+  if(!data.history.length){el.innerHTML='<div style="text-align:center;padding:40px;color:var(--muted);font-size:13px;">📋 Nessun preventivo</div>';return;}
+  el.innerHTML=data.history.map(h=>`<div class="history-item"><div style="font-size:10px;color:var(--muted);font-family:'Space Mono',monospace;margin-bottom:4px;">📅 ${h.date} · ${h.material} · ${h.quantity}pz</div><div style="font-weight:700;font-size:14px;margin-bottom:7px;">${h.name}</div><div style="display:flex;align-items:baseline;gap:12px;"><span style="font-family:'Space Mono',monospace;color:var(--accent);font-size:15px;font-weight:700;">€${h.cost.toFixed(2)}</span><span style="font-family:'Space Mono',monospace;color:var(--green);font-size:13px;font-weight:700;">→ €${h.sellPrice.toFixed(2)}</span><span style="font-size:11px;color:var(--muted);">${h.margin}%</span></div><button class="pcard-del" style="opacity:1;" onclick="data.history=data.history.filter(h=>h.id!==${h.id});saveAll();renderHistory();">×</button></div>`).join('');
+}
+
+function clearHistory(){if(confirm('Cancellare tutto lo storico?')){data.history=[];saveAll();renderHistory();}}
+
+// ══ RESET ══
+function resetForm(){
+  const def={weightUsed:50,spoolWeight:1000,spoolCost:25,printHours:4,printMinutes:30,failRate:5,laborRate:20,laborTime:.5,setupCost:0,packagingCost:2,fixedCosts:0,monthlyHours:100,quantity:1,piecesPerPlate:1,materialEfficiency:1.1,bufferFactor:1.0};
+  Object.entries(def).forEach(([id,val])=>document.getElementById(id).value=val);
+  document.getElementById('projectName').value='';document.getElementById('marginSlider').value=30;
+  calc();toast('🔄 Valori ripristinati');
+}
+
+// ══ EXPORT / IMPORT ══
+function exportData(){
+  const blob=new Blob([JSON.stringify({version:2,exportedAt:new Date().toISOString(),...data},null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`3dcalc-backup-${new Date().toLocaleDateString('it-IT').replace(/\//g,'-')}.json`;a.click();URL.revokeObjectURL(a.href);toast('✅ Backup scaricato!');
+}
+
+function importDataFn(event){
+  const file=event.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const p=JSON.parse(e.target.result);
+      if(!p.profiles||!p.filaments)throw new Error('invalid');
+      if(!confirm(`Importare ${p.profiles.length} stampanti, ${p.filaments.length} filamenti e ${p.history?.length||0} preventivi?\nI dati attuali verranno sostituiti.`)){event.target.value='';return;}
+      data.profiles=p.profiles||[];data.filaments=p.filaments||[];data.history=p.history||[];
+      saveAll();renderAll();toast('✅ Dati importati!');
+    }catch{toast('❌ File non valido',true);}
+    event.target.value='';
+  };
+  reader.readAsText(file);
+}
+
+// ══ TOAST ══
+function toast(msg,isErr=false){
+  const wrap=document.getElementById('toast-wrap');
+  const t=document.createElement('div');t.className='toast-msg'+(isErr?' err':'');t.textContent=msg;
+  wrap.appendChild(t);setTimeout(()=>t.remove(),2800);
+}
+
+// ══ GOOGLE DRIVE ══
+const GAPI_CLIENT_ID='INSERISCI_QUI_IL_TUO_CLIENT_ID.apps.googleusercontent.com';
+const DRIVE_SCOPE='https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email';
+const DRIVE_FILENAME='3dcalc_data.json';
+let driveAccessToken=null,driveFileId=null,driveSaveTimer=null,driveUserEmail='';
+let liveSyncInterval=null,lastDriveModified='';
+
+function driveSetStatus(state,label){
+  const dot=document.getElementById('drive-dot'),lbl=document.getElementById('drive-label');
+  dot.className='ddot'+(state?' '+state:'');lbl.textContent=label;
+}
+function driveShowControls(show){
+  document.getElementById('btn-drive-save').style.display=show?'':'none';
+  document.getElementById('btn-drive-account').style.display=show?'':'none';
+  if(show)document.getElementById('btn-drive-account').textContent='👤 '+(driveUserEmail||'Account');
+}
+
+function driveSignIn(){
+  if(typeof google==='undefined'){toast('⚠️ Libreria Google non disponibile — apri da GitHub Pages',true);return;}
+  const client=google.accounts.oauth2.initTokenClient({client_id:GAPI_CLIENT_ID,scope:DRIVE_SCOPE,
+    callback:async resp=>{
+      if(resp.error){toast('Accesso negato: '+resp.error,true);return;}
+      driveAccessToken=resp.access_token;localStorage.setItem('3dc2_drive_token',driveAccessToken);
+      document.getElementById('login-overlay').classList.add('hidden');
+      driveSetStatus('syncing','Connessione...');await driveGetUserInfo();await driveInit();
+    }
+  });
+  client.requestAccessToken({prompt:'select_account'});
+}
+
+function skipLogin(){localStorage.setItem('3dc2_skip_login','1');document.getElementById('login-overlay').classList.add('hidden');driveSetStatus('','Solo locale');loadData();renderAll();}
+
+function driveSwitchAccount(){
+  driveAccessToken=null;driveFileId=null;if(liveSyncInterval)clearInterval(liveSyncInterval);
+  localStorage.removeItem('3dc2_drive_token');localStorage.removeItem('3dc2_skip_login');
+  driveSetStatus('','Non connesso');driveShowControls(false);
+  document.getElementById('login-overlay').classList.remove('hidden');
+}
+
+async function driveGetUserInfo(){try{const r=await fetch('https://www.googleapis.com/oauth2/v3/userinfo',{headers:{Authorization:'Bearer '+driveAccessToken}});const i=await r.json();driveUserEmail=i.email||'';}catch(e){}}
+
+async function driveInit(){
+  try{
+    driveSetStatus('syncing','Ricerca file Drive...');
+    const sr=await fetch(`https://www.googleapis.com/drive/v3/files?q=name%3D%27${DRIVE_FILENAME}%27+and+trashed%3Dfalse&fields=files(id,modifiedTime)`,{headers:{Authorization:'Bearer '+driveAccessToken}});
+    const sd=await sr.json();
+    if(sd.files?.length>0){driveFileId=sd.files[0].id;lastDriveModified=sd.files[0].modifiedTime||'';await driveLoadFromFile();}
+    else{loadData();renderAll();await driveSaveNow();}
+    driveSetStatus('connected',`✓ Sincronizzato · ${driveUserEmail}`);driveShowControls(true);startLiveSync();
+  }catch(e){driveSetStatus('error','⚠ Errore Drive — dati locali');loadData();renderAll();}
+}
+
+async function driveLoadFromFile(){
+  try{
+    const r=await fetch(`https://www.googleapis.com/drive/v3/files/${driveFileId}?alt=media`,{headers:{Authorization:'Bearer '+driveAccessToken}});
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    const d=await r.json();
+    if(d.profiles)data.profiles=d.profiles;if(d.filaments)data.filaments=d.filaments;if(d.history)data.history=d.history;
+    saveAll();renderAll();toast('☁️ Dati caricati da Drive');
+  }catch(e){toast('⚠️ Errore lettura Drive',true);loadData();renderAll();}
+}
+
+async function driveSaveNow(){
+  if(!driveAccessToken)return;driveSetStatus('syncing','Salvataggio...');
+  const content=JSON.stringify(data,null,2);
+  try{
+    if(driveFileId){
+      await fetch(`https://www.googleapis.com/upload/drive/v3/files/${driveFileId}?uploadType=media`,{method:'PATCH',headers:{Authorization:'Bearer '+driveAccessToken,'Content-Type':'application/json'},body:content});
+      const m=await(await fetch(`https://www.googleapis.com/drive/v3/files/${driveFileId}?fields=modifiedTime`,{headers:{Authorization:'Bearer '+driveAccessToken}})).json();lastDriveModified=m.modifiedTime||'';
+    }else{
+      const form=new FormData();form.append('metadata',new Blob([JSON.stringify({name:DRIVE_FILENAME,mimeType:'application/json'})],{type:'application/json'}));form.append('file',new Blob([content],{type:'application/json'}));
+      const cr=await(await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,modifiedTime',{method:'POST',headers:{Authorization:'Bearer '+driveAccessToken},body:form})).json();
+      driveFileId=cr.id;lastDriveModified=cr.modifiedTime||'';
+    }
+    driveSetStatus('connected',`✓ Sincronizzato · ${driveUserEmail} · ${new Date().toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'})}`);
+  }catch(e){driveSetStatus('error','⚠ Errore salvataggio');}
+}
+
+function driveScheduleSave(){if(!driveAccessToken)return;clearTimeout(driveSaveTimer);driveSaveTimer=setTimeout(driveSaveNow,2000);}
+
+function startLiveSync(){if(liveSyncInterval)clearInterval(liveSyncInterval);liveSyncInterval=setInterval(checkRemoteChanges,30000);}
+
+async function checkRemoteChanges(){
+  if(!driveAccessToken||!driveFileId)return;
+  try{
+    const m=await(await fetch(`https://www.googleapis.com/drive/v3/files/${driveFileId}?fields=modifiedTime`,{headers:{Authorization:'Bearer '+driveAccessToken}})).json();
+    if(m.modifiedTime&&m.modifiedTime!==lastDriveModified){
+      document.getElementById('live-indicator').style.display='';driveSetStatus('syncing','🔄 Aggiornamento...');
+      const nd=await(await fetch(`https://www.googleapis.com/drive/v3/files/${driveFileId}?alt=media`,{headers:{Authorization:'Bearer '+driveAccessToken}})).json();
+      if(nd.profiles)data.profiles=nd.profiles;if(nd.filaments)data.filaments=nd.filaments;if(nd.history)data.history=nd.history;
+      saveAll();lastDriveModified=m.modifiedTime;renderAll();
+      document.getElementById('live-indicator').style.display='none';
+      driveSetStatus('connected','✓ Aggiornato · '+new Date().toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}));
+      toast('📡 Dati aggiornati da altro dispositivo');
+    }
+  }catch(e){}
+}
+
+// ══ REVISIONI ══
+const REV_KEY='3dc2_revisions';const MAX_REV=5;
+let _restoreTargetIdx=null;
+
+function saveRevision(){
+  try{
+    const revs=JSON.parse(localStorage.getItem(REV_KEY)||'[]');
+    const snap={
+      ts:new Date().toISOString(),
+      label:new Date().toLocaleString('it-IT'),
+      profiles:data.profiles.length,
+      filaments:data.filaments.length,
+      history:data.history.length,
+      data:JSON.stringify(data)
+    };
+    revs.unshift(snap);
+    if(revs.length>MAX_REV)revs.splice(MAX_REV);
+    localStorage.setItem(REV_KEY,JSON.stringify(revs));
+  }catch(e){}
+}
+
+function renderRevisions(){
+  const el=document.getElementById('revisions-list');
+  if(!el)return;
+  const revs=JSON.parse(localStorage.getItem(REV_KEY)||'[]');
+  if(!revs.length){
+    el.innerHTML='<div style="text-align:center;padding:30px 0;color:var(--muted);font-size:13px;">🕓 Nessuna revisione disponibile.<br>Le revisioni vengono salvate automaticamente ad ogni modifica.</div>';
+    return;
+  }
+  el.innerHTML=revs.map((r,i)=>`
+    <div style="display:flex;align-items:center;gap:12px;padding:13px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;">
+      <div style="font-size:22px;flex-shrink:0;">💾</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:700;margin-bottom:2px;">${r.label}</div>
+        <div style="font-size:11px;color:var(--muted);font-family:'Space Mono',monospace;">
+          ${r.profiles} stampanti · ${r.filaments} filamenti · ${r.history} preventivi
+          ${i===0?'<span style="margin-left:8px;background:rgba(255,107,53,.15);color:var(--accent);padding:1px 8px;border-radius:20px;font-size:10px;font-weight:700;">PIÙ RECENTE</span>':''}
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0;">
+        <button onclick="openRestoreModal(${i})" style="padding:6px 11px;border-radius:8px;border:1px solid var(--accent);background:rgba(255,107,53,.1);color:var(--accent);font-family:'Syne',sans-serif;font-size:11px;font-weight:700;cursor:pointer;">♻️ Ripristina</button>
+        <button onclick="exportRevision(${i})" style="padding:6px 11px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--muted);font-family:'Syne',sans-serif;font-size:11px;font-weight:700;cursor:pointer;">📤</button>
+      </div>
+    </div>`).join('');
+}
+
+function openRestoreModal(idx){
+  const revs=JSON.parse(localStorage.getItem(REV_KEY)||'[]');
+  const r=revs[idx];if(!r)return;
+  _restoreTargetIdx=idx;
+  document.getElementById('modal-restore-info').innerHTML=
+    `<strong>Data:</strong> ${r.label}<br><strong>Stampanti:</strong> ${r.profiles} &nbsp;·&nbsp; <strong>Filamenti:</strong> ${r.filaments} &nbsp;·&nbsp; <strong>Preventivi:</strong> ${r.history}`;
+  const m=document.getElementById('modal-restore');m.style.opacity='1';m.style.pointerEvents='all';
+}
+
+function closeRestoreModal(){
+  const m=document.getElementById('modal-restore');m.style.opacity='0';m.style.pointerEvents='none';
+  _restoreTargetIdx=null;
+}
+
+function confirmRestore(){
+  if(_restoreTargetIdx===null)return;
+  const revs=JSON.parse(localStorage.getItem(REV_KEY)||'[]');
+  const r=revs[_restoreTargetIdx];if(!r)return;
+  saveRevision(); // salva stato corrente prima di sovrascrivere
+  try{
+    const parsed=JSON.parse(r.data);
+    if(parsed.profiles)data.profiles=parsed.profiles;
+    if(parsed.filaments)data.filaments=parsed.filaments;
+    if(parsed.history)data.history=parsed.history;
+    saveAll();renderAll();renderRevisions();
+    closeRestoreModal();
+    toast('✅ Revisione ripristinata!');
+  }catch(e){toast('❌ Errore nel ripristino',true);}
+}
+
+function exportRevision(idx){
+  const revs=JSON.parse(localStorage.getItem(REV_KEY)||'[]');
+  const r=revs[idx];if(!r)return;
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([r.data],{type:'application/json'}));
+  a.download=`3dcalc-revisione-${r.ts.slice(0,10)}.json`;
+  a.click();URL.revokeObjectURL(a.href);
+  toast('📤 Revisione esportata!');
+}
+
+// ══ TEMA ══
+function setTheme(t){
+  document.body.classList.toggle('theme-light',t==='light');
+  localStorage.setItem('3dc2_theme',t);
+  const ico=document.getElementById('theme-ico'),lbl=document.getElementById('theme-lbl'),btn=document.getElementById('topbar-theme-btn');
+  if(t==='light'){if(ico)ico.textContent='🌙';if(lbl)lbl.textContent='Tema scuro';if(btn)btn.textContent='🌙';}
+  else{if(ico)ico.textContent='☀️';if(lbl)lbl.textContent='Tema chiaro';if(btn)btn.textContent='☀️';}
+}
+function toggleTheme(){setTheme(document.body.classList.contains('theme-light')?'dark':'light');}
+function loadTheme(){setTheme(localStorage.getItem('3dc2_theme')||'dark');}
+
+// ══ AVVIO ══
+(function init(){
+  loadTheme();
+  const skip=localStorage.getItem('3dc2_skip_login'),token=localStorage.getItem('3dc2_drive_token');
+  if(skip){document.getElementById('login-overlay').classList.add('hidden');driveSetStatus('','Solo locale');loadData();renderAll();return;}
+  if(token){
+    driveAccessToken=token;document.getElementById('login-overlay').classList.add('hidden');driveSetStatus('syncing','Ripristino sessione...');
+    fetch('https://www.googleapis.com/oauth2/v3/userinfo',{headers:{Authorization:'Bearer '+token}})
+      .then(r=>{
+        if(r.ok)return r.json().then(async i=>{driveUserEmail=i.email||'';return driveInit();});
+        driveAccessToken=null;localStorage.removeItem('3dc2_drive_token');driveSetStatus('','Sessione scaduta');
+        loadData();renderAll();setTimeout(()=>document.getElementById('login-overlay').classList.remove('hidden'),1500);
+      }).catch(()=>{driveSetStatus('','Offline — dati locali');loadData();renderAll();});
+    return;
+  }
+  loadData();renderAll();
+})();
+</script>
+</body>
+</html>
