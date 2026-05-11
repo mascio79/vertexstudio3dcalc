@@ -4,8 +4,8 @@
   "description": "Calcolatore professionale per costi di stampa 3D FDM",
   "start_url": "/vertexstudio3dcalc/",
   "display": "standalone",
-  "background_color": "#0a0a0f",
-  "theme_color": "#0a0a0f",
+  "background_color": "#060e14",
+  "theme_color": "#060e14",
   "orientation": "any",
   "icons": [
     {
