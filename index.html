@@ -403,7 +403,7 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;hei
             <div class="card-title"><div class="card-icon ico-yellow">👷</div>Manodopera & Extra</div>
             <div class="fg">
               <div class="field"><label>Tariffa oraria <span class="tip"><i class="tip-icon">?</i><span class="tip-text">Il tuo valore orario per lavoro manuale (preparazione, post-processing...).</span></span></label><div class="iw"><input type="number" id="laborRate" value="20" min="0" oninput="calc()"><span class="unit">€/h</span></div></div>
-              <div class="field"><label>Tempo lavorato</label><div class="iw"><input type="number" id="laborTime" value="0.5" min="0" step=".25" oninput="calc()"><span class="unit">h</span></div></div>
+              <div class="field"><label>Tempo lavorato <span class="tip"><i class="tip-icon">?</i><span class="tip-text">Minuti dedicati al lavoro manuale: rimozione supporti, post-processing, verniciatura, ecc.</span></span></label><div class="iw"><input type="number" id="laborTime" value="10" min="0" step="1" oninput="calc()"><span class="unit">min</span></div></div>
             </div>
             <div class="fg">
               <div class="field"><label>Setup aggiuntivo <span class="tip"><i class="tip-icon">?</i><span class="tip-text">Costo di design, licenze file, ecc.</span></span></label><div class="iw"><input type="number" id="setupCost" value="0" min="0" oninput="calc()"><span class="unit">€</span></div></div>
@@ -809,7 +809,7 @@ function applyFilamentToSlot(fil,slotIdx){
 function v(id){return parseFloat(document.getElementById(id)?.value)||0;}
 function calc(){
   const ph=v('printHours'),pm=v('printMinutes'),fr=v('failRate');
-  const lr=v('laborRate'),lt=v('laborTime');
+  const lr=v('laborRate'),lt=v('laborTime')/60; // laborTime in minuti → converti in ore
   const stup=v('setupCost'),pkg=v('packagingCost');
   const fc=v('fixedCosts'),mh=v('monthlyHours')||1;
   const qty=Math.max(1,v('quantity')),ppp=Math.max(1,v('piecesPerPlate'));
@@ -998,7 +998,7 @@ function clearHistory(){if(confirm('Cancellare tutto lo storico?')){data.history
 
 // ══ RESET ══
 function resetForm(){
-  const def={printHours:4,printMinutes:30,failRate:5,laborRate:20,laborTime:.5,setupCost:0,packagingCost:2,fixedCosts:0,monthlyHours:100,quantity:1,piecesPerPlate:1,materialEfficiency:1.1,bufferFactor:1.0};
+  const def={printHours:4,printMinutes:30,failRate:5,laborRate:20,laborTime:10,setupCost:0,packagingCost:2,fixedCosts:0,monthlyHours:100,quantity:1,piecesPerPlate:1,materialEfficiency:1.1,bufferFactor:1.0};
   Object.entries(def).forEach(([id,val])=>{const el=document.getElementById(id);if(el)el.value=val;});
   document.getElementById('projectName').value='';document.getElementById('marginSlider').value=30;
   initMaterialSlots();
