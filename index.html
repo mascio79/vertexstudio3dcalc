@@ -771,7 +771,7 @@ function renderMaterialSlots(){
     <div class="color-slot">
       <div class="color-slot-head">
         <span class="color-dot" style="background:${SLOT_COLORS[i]};"></span>
-        ${SLOT_NAMES[i]}${materialSlots.length>1?'':', unico materiale'}
+        ${SLOT_NAMES[i]}${materialSlots.length===1?' — unico materiale':''}
       </div>
       <div class="fg">
         <div class="field"><label>Peso usato</label><div class="iw"><input type="number" value="${s.weight}" min="0" step="0.1" oninput="updateSlot(${s.id},'weight',this.value)" style="padding-right:28px;"><span class="unit">g</span></div></div>
@@ -783,7 +783,7 @@ function renderMaterialSlots(){
         <div class="field"><label>Costo bobina</label><div class="iw"><input type="number" value="${s.cost}" min="0" step="0.5" oninput="updateSlot(${s.id},'cost',this.value)" style="padding-right:28px;"><span class="unit">€</span></div></div>
         <div class="field"><label>Peso bobina</label><div class="iw"><input type="number" value="${s.spoolW}" min="1" step="100" oninput="updateSlot(${s.id},'spoolW',this.value)" style="padding-right:28px;"><span class="unit">g</span></div></div>
       </div>
-      <div style="font-size:11px;color:var(--accent);font-family:'Space Mono',monospace;">€${s.spoolW>0?(s.cost/s.spoolW).toFixed(4):0}/g → stampa ${s.weight}g: €${s.spoolW>0?((s.cost/s.spoolW)*s.weight).toFixed(2):0}</div>
+      <div id="slot-info-${s.id}" style="font-size:11px;color:var(--accent);font-family:'Space Mono',monospace;">€${s.spoolW>0?(s.cost/s.spoolW).toFixed(4):0}/g → stampa ${s.weight}g: €${s.spoolW>0?((s.cost/s.spoolW)*s.weight).toFixed(2):0}</div>
       ${materialSlots.length>1?`<button class="remove-slot" onclick="removeMaterialSlot(${s.id})">×</button>`:''}
     </div>`).join('');
 }
@@ -792,8 +792,12 @@ function updateSlot(id,field,val){
   const s=materialSlots.find(x=>x.id===id);
   if(!s)return;
   s[field]=field==='type'?val:parseFloat(val)||0;
-  // Aggiorna solo il testo costo/g nel slot senza re-renderizzare tutto
-  renderMaterialSlots();
+  // Aggiorna solo il testo costo/g per questo slot, senza re-renderizzare
+  const slotIdx=materialSlots.findIndex(x=>x.id===id);
+  const infoEl=document.getElementById('slot-info-'+id);
+  if(infoEl){
+    infoEl.textContent=`€${s.spoolW>0?(s.cost/s.spoolW).toFixed(4):0}/g → stampa ${s.weight}g: €${s.spoolW>0?((s.cost/s.spoolW)*s.weight).toFixed(2):0}`;
+  }
   calc();
 }
 
