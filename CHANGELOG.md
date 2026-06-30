@@ -2,6 +2,24 @@
 
 ---
 
+## v1.7 · Maggio 2026
+
+### Nuove funzionalità
+- **Migrazione a Firebase Authentication** — sostituito il login Google OAuth (token a vita breve, consenso richiesto ogni ~1 ora) con Firebase Auth email/password; sessione persistente gestita automaticamente da Firebase, niente più richieste di consenso ripetute
+- **Firebase Realtime Database** — sostituita la sincronizzazione su Google Drive con Firebase Realtime Database (path `3dcalc/data`); salvataggio automatico 2s dopo ogni modifica; listener live per aggiornamenti istantanei da altri dispositivi (sostituisce il polling ogni 30s)
+
+### Modifiche
+- Login overlay aggiornato con campi email/password al posto del pulsante "Accedi con Google"
+- Sezione Sync rinominata "Sincronizzazione Firebase" con istruzioni aggiornate
+- Pulsante "Cambia account Google" sostituito da "Disconnetti" (logout Firebase)
+- Script SDK: rimosso `accounts.google.com/gsi/client`, aggiunti `firebase-app-compat.js`, `firebase-auth-compat.js`, `firebase-database-compat.js` (v10.12.0)
+
+### Note
+- L'app richiede ora la creazione di un utente nella console Firebase (Authentication → Users) invece dell'autorizzazione OAuth Google
+- Il file deve essere servito da un dominio reale (es. GitHub Pages) — aprendo `index.html` in locale (`file://`) gli script Firebase non si caricano per restrizioni del browser
+
+---
+
 ## v1.6 · Maggio 2026
 
 ### Nuove funzionalità
