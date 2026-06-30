@@ -2,7 +2,7 @@
 
 ---
 
-## v1.7 · Maggio 2026
+## v1.7 · Giugno 2026
 
 ### Nuove funzionalità
 - **Migrazione a Firebase Authentication** — sostituito il login Google OAuth (token a vita breve, consenso richiesto ogni ~1 ora) con Firebase Auth email/password; sessione persistente gestita automaticamente da Firebase, niente più richieste di consenso ripetute

@@ -631,7 +631,7 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;hei
   </div>
 
   <!-- APP FOOTER -->
-  <div id="app-footer" onclick="document.getElementById('modal-changelog').classList.add('open')" title="Clicca per vedere il changelog">3DCALC &nbsp;·&nbsp; Vertex Studio Bari &nbsp;·&nbsp; v1.7 &nbsp;·&nbsp; Maggio 2026 &nbsp;ℹ️</div>
+  <div id="app-footer" onclick="document.getElementById('modal-changelog').classList.add('open')" title="Clicca per vedere il changelog">3DCALC &nbsp;·&nbsp; Vertex Studio Bari &nbsp;·&nbsp; v1.7 &nbsp;·&nbsp; Giugno 2026 &nbsp;ℹ️</div>
 
 </div><!-- #main -->
 
@@ -640,13 +640,17 @@ input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;hei
   <div class="modal-box">
     <div class="modal-head"><h3>📋 Changelog — 3DCALC</h3><button class="modal-close" onclick="document.getElementById('modal-changelog').classList.remove('open')">✕</button></div>
     <div class="modal-body">
-      <div class="cl-entry"><div class="cl-ver">v1.7 · Maggio 2026</div>
+      <div class="cl-entry"><div class="cl-ver">v1.7 · Giugno 2026</div>
         <div class="cl-section">Nuove funzionalità</div>
         <div class="cl-item"><strong>Migrazione a Firebase Auth</strong> — sostituito il login Google OAuth (token a vita breve, consenso richiesto ogni ~1 ora) con Firebase Authentication email/password; sessione persistente senza richiesta ripetuta di consenso</div>
         <div class="cl-item"><strong>Firebase Realtime Database</strong> — sincronizzazione dati in tempo reale (al posto di Google Drive); salvataggio automatico 2s dopo ogni modifica; listener live per aggiornamenti istantanei da altri dispositivi, senza polling a intervalli</div>
         <div class="cl-section">Modifiche</div>
-        <div class="cl-item">Sezione Sync rinominata e aggiornata con le nuove istruzioni Firebase</div>
-        <div class="cl-item">Pulsante "Cambia account" sostituito da "Disconnetti" (logout Firebase)</div>
+        <div class="cl-item">Login overlay aggiornato con campi email/password al posto del pulsante "Accedi con Google"</div>
+        <div class="cl-item">Sezione Sync rinominata "Sincronizzazione Firebase" e aggiornata con le nuove istruzioni</div>
+        <div class="cl-item">Pulsante "Cambia account Google" sostituito da "Disconnetti" (logout Firebase)</div>
+        <div class="cl-section">Note</div>
+        <div class="cl-item">Richiede la creazione di un utente nella console Firebase (Authentication → Users) invece dell'autorizzazione OAuth Google</div>
+        <div class="cl-item">Il file deve essere servito da un dominio reale (es. GitHub Pages) — aprendolo in locale (file://) gli script Firebase non si caricano per restrizioni del browser</div>
       </div>
       <div class="cl-entry"><div class="cl-ver">v1.6 · Maggio 2026</div>
         <div class="cl-section">Nuove funzionalità</div>
